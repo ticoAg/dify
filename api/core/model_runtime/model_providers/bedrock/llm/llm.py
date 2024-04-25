@@ -449,6 +449,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             human_prompt_prefix = "\n[INST]"
             human_prompt_postfix = "[\\INST]\n"
             ai_prompt = ""
+        
+        elif model_prefix == "mistral":
+            human_prompt_prefix = "<s>[INST]"
+            human_prompt_postfix = "[\\INST]\n"
+            ai_prompt = "\n\nAssistant:"
 
         elif model_prefix == "amazon":
             human_prompt_prefix = "\n\nUser:"
@@ -503,7 +508,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         if model_prefix == "amazon":
             payload["textGenerationConfig"] = { **model_parameters }
-            payload["textGenerationConfig"]["stopSequences"] = ["User:"] + (stop if stop else [])
+            payload["textGenerationConfig"]["stopSequences"] = ["User:"]
             
             payload["inputText"] = self._convert_messages_to_prompt(prompt_messages, model_prefix)
         
@@ -513,16 +518,19 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             payload["maxTokens"] = model_parameters.get("maxTokens")
             payload["prompt"] = self._convert_messages_to_prompt(prompt_messages, model_prefix)
 
-            # jurassic models only support a single stop sequence
-            if stop:
-                payload["stopSequences"] = stop[0]
-
             if model_parameters.get("presencePenalty"):
                 payload["presencePenalty"] = {model_parameters.get("presencePenalty")}
             if model_parameters.get("frequencyPenalty"):
                 payload["frequencyPenalty"] = {model_parameters.get("frequencyPenalty")}
             if model_parameters.get("countPenalty"):
                 payload["countPenalty"] = {model_parameters.get("countPenalty")}
+        
+        elif model_prefix == "mistral":
+            payload["temperature"] = model_parameters.get("temperature")
+            payload["top_p"] = model_parameters.get("top_p")
+            payload["max_tokens"] = model_parameters.get("max_tokens")
+            payload["prompt"] = self._convert_messages_to_prompt(prompt_messages, model_prefix)
+            payload["stop"] = stop[:10] if stop else []
 
         elif model_prefix == "anthropic":
             payload = { **model_parameters }
@@ -652,6 +660,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             output = response_body.get("generation").strip('\n')
             prompt_tokens = response_body.get("prompt_token_count")
             completion_tokens = response_body.get("generation_token_count")
+        
+        elif model_prefix == "mistral":
+            output = response_body.get("outputs")[0].get("text")
+            prompt_tokens = response.get('ResponseMetadata').get('HTTPHeaders').get('x-amzn-bedrock-input-token-count')
+            completion_tokens = response.get('ResponseMetadata').get('HTTPHeaders').get('x-amzn-bedrock-output-token-count')
 
         else:
             raise ValueError(f"Got unknown model prefix {model_prefix} when handling block response")
@@ -735,6 +748,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 content_delta = payload.get("text")
                 finish_reason = payload.get("finish_reason")
             
+            elif model_prefix == "mistral":
+                content_delta = payload.get('outputs')[0].get("text")
+                finish_reason = payload.get('outputs')[0].get("stop_reason")
+
             elif model_prefix == "meta":
                 content_delta = payload.get("generation").strip('\n')
                 finish_reason = payload.get("stop_reason")
