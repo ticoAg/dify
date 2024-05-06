@@ -131,13 +131,9 @@ class DatasetService:
 
     @staticmethod
     def get_dataset(dataset_id):
-        dataset = Dataset.query.filter_by(
+        return Dataset.query.filter_by(
             id=dataset_id
         ).first()
-        if dataset is None:
-            return None
-        else:
-            return dataset
 
     @staticmethod
     def check_dataset_model_setting(dataset):
@@ -418,9 +414,8 @@ class DocumentService:
     def get_error_documents_by_dataset_id(dataset_id: str) -> list[Document]:
         documents = db.session.query(Document).filter(
             Document.dataset_id == dataset_id,
-            Document.indexing_status == 'error' or Document.indexing_status == 'paused'
+            Document.indexing_status.in_(['error', 'paused'])
         ).all()
-
         return documents
 
     @staticmethod
