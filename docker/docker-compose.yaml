@@ -318,7 +318,7 @@ services:
       SENTRY_DSN: ''
     # uncomment to expose dify-web port to host
     ports:
-      - "26922:3000"
+      - "26923:3000"
 
   # The postgres database.
   db:
