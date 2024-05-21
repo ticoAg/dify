@@ -318,7 +318,7 @@ services:
       SENTRY_DSN: ''
     # uncomment to expose dify-web port to host
     ports:
-      - "3000:3000"
+      - "26923:3000"
 
   # The postgres database.
   db:
@@ -469,7 +469,7 @@ services:
       - web
     ports:
       - "26921:80"
-      - "26923:443"
+      # - "26923:443"
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.
   ssrf_proxy_network:
